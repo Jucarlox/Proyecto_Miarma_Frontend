@@ -35,7 +35,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
         )),
         padding: EdgeInsets.symmetric(horizontal: 20.0),
-        height: 70,
+        height: 55,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -68,14 +68,19 @@ class _MenuScreenState extends State<MenuScreen> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), border: Border.all(color: _currentIndex == 2? Colors.black: Colors.transparent, width: 1)),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                        color: _currentIndex == 2
+                            ? Colors.black
+                            : Colors.transparent,
+                        width: 2)),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(100),
                   child: Image.asset(
-                      'assets/images/avatar.jpeg',
-                      width: 30,
-                    ),
+                    'assets/images/avatar.jpeg',
+                    width: 40,
+                  ),
                 ),
               ),
             )
