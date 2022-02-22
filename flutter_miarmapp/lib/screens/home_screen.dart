@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _createPopularView(BuildContext context, List<PublicResponse> movies) {
-    final contentHeight = 4.0 * (MediaQuery.of(context).size.width / 2.4) / 3;
+    final contentHeight = (MediaQuery.of(context).size.height) * 0.85;
     return Column(
       children: [
         Container(
@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return _createPopularViewItem(context, movies[index]);
             },
             padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-            scrollDirection: Axis.horizontal,
+            scrollDirection: Axis.vertical,
             separatorBuilder: (context, index) => const VerticalDivider(
               color: Colors.transparent,
               width: 6.0,
@@ -205,40 +205,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _createPopularViewItem(BuildContext context, PublicResponse post) {
-    final width = MediaQuery.of(context).size.width / 2.6;
-    return Container(
-      width: width,
-      height: double.infinity,
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Card(
-        elevation: 10.0,
-        borderOnForeground: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: SizedBox(
-          width: width,
-          height: double.infinity,
-          child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Column(
-                children: [
-                  CachedNetworkImage(
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    imageUrl: post.fileScale.replaceAll(
-                        "http://localhost:8080", "http://10.0.2.2:8080"),
-                    width: width,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ],
-              )
-              /** */
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.width;
 
+    return Container(
+      decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey.withOpacity(.3)))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(20.0),
+              child: CachedNetworkImage(
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                imageUrl: post.user.avatar.replaceAll(
+                    "http://localhost:8080", "http://10.0.2.2:8080"),
+                width: 30,
+                height: 30,
+                fit: BoxFit.cover,
               ),
-        ),
+            ),
+            title: Text(
+              post.title,
+              style: TextStyle(
+                  color: Colors.black.withOpacity(.8),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 21),
+            ),
+            trailing: const Icon(Icons.more_vert),
+          ),
+          CachedNetworkImage(
+            placeholder: (context, url) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            imageUrl: post.fileScale
+                .replaceAll("http://localhost:8080", "http://10.0.2.2:8080"),
+            fit: BoxFit.cover,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Row(
+                  children: const <Widget>[
+                    Icon(Icons.favorite_border, size: 31),
+                    SizedBox(
+                      width: 12,
+                    ),
+                    Icon(Icons.comment_sharp, size: 31),
+                    SizedBox(
+                      width: 12,
+                    ),
+                    Icon(Icons.send, size: 31),
+                  ],
+                ),
+                const Icon(Icons.bookmark_border, size: 31)
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            child: Text(
+              'liked by you and 385 others',
+              style:
+                  TextStyle(fontSize: 16, color: Colors.black.withOpacity(.8)),
+            ),
+          )
+        ],
       ),
     );
   }
