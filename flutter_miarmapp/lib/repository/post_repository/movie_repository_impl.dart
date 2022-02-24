@@ -6,17 +6,18 @@ import 'package:flutter_miarmapp/models/PublicPost.dart';
 import 'package:flutter_miarmapp/repository/post_repository/movie_repository.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PostRepositoryImpl extends PostRepository {
   final Client _client = Client();
 
   @override
   Future<List<PublicResponse>> fetchPublicPost(String type) async {
-    final response = await _client
-        .get(Uri.parse('http://10.0.2.2:8080/post/public'), headers: {
-      'Authorization':
-          'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYzFiMDNiOS03ZjI1LTEzMjgtODE3Zi0yNWUzNWVmMTAwMDAiLCJpYXQiOjE2NDU2MTE3MzcsImVtYWlsIjoianVhbkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiJ9.IYUMtrijrAvPx7_lZHc4OCQwojsaA3eK0q2wkuqHcm0'
-    });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final response = await _client.get(
+        Uri.parse('http://10.0.2.2:8080/post/public'),
+        headers: {'Authorization': 'Bearer ${prefs.getString("token")}'});
     if (response.statusCode == 200) {
       return (json.decode(response.body) as List)
           .map((i) => PublicResponse.fromJson(i))
