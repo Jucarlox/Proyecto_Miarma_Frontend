@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miarmapp/bloc/image_pick_bloc/image_pick_bloc_bloc.dart';
 import 'package:flutter_miarmapp/bloc/post_bloc/post_bloc.dart';
 import 'package:flutter_miarmapp/models/PublicPost.dart';
 import 'package:flutter_miarmapp/models/Register.dart';
@@ -279,65 +280,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(
                   height: 30,
                 ),
-                TextField(
-                  style: TextStyle(color: Colors.white),
-                  obscureText: true,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
+                Center(
+                  child: TextField(
+                    style: TextStyle(color: Colors.white),
+                    obscureText: true,
+                    decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                      hintText:
-                          "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}",
-                      prefixIcon: IconButton(
-                        onPressed: () {
-                          _selectDate(context);
-                        },
-                        icon: Icon(Icons.calendar_today),
-                      ),
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
+                        hintText:
+                            "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}",
+                        prefixIcon: IconButton(
+                          onPressed: () {
+                            _selectDate(context);
+                          },
+                          icon: Icon(Icons.calendar_today),
+                        ),
+                        hintStyle: TextStyle(color: Colors.white),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        )),
+                  ),
                 ),
                 SizedBox(
                   height: 30,
                 ),
-                TextField(
-                  style: TextStyle(color: Colors.white),
+                TextFormField(
                   obscureText: true,
                   decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
-                        ),
-                      ),
-                      hintText: imageSelect,
-                      prefixIcon: IconButton(
-                        onPressed: () async {
-                          pickFiles("Image");
-                        },
-                        icon: Icon(Icons.file_upload),
-                      ),
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
+                    hintText: imageSelect,
+                    icon: BlocProvider(
+                      create: (context) {
+                        return ImagePickBlocBloc();
+                      },
+                      child:
+                          BlocConsumer<ImagePickBlocBloc, ImagePickBlocState>(
+                              listenWhen: (context, state) {
+                                return state is ImageSelectedSuccessState;
+                              },
+                              listener: (context, state) {},
+                              buildWhen: (context, state) {
+                                return state is ImagePickBlocInitial ||
+                                    state is ImageSelectedSuccessState;
+                              },
+                              builder: (context, state) {
+                                if (state is ImageSelectedSuccessState) {
+                                  print('PATH ${state.pickedFile.path}');
+                                  imageSelect = state.pickedFile.path;
+                                  return Column(children: [
+                                    Image.file(
+                                      File(state.pickedFile.path),
+                                      height: 100,
+                                    ),
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          // TODO el evento que debeis crear en el BLoC para
+                                          // poder subir la imagen que tenemos guardada en
+                                          // state.pickedFile.path
+                                        },
+                                        child: const Text('Upload Image'))
+                                  ]);
+                                }
+                                return Center(
+                                    child: ElevatedButton(
+                                        onPressed: () {
+                                          BlocProvider.of<ImagePickBlocBloc>(
+                                                  context)
+                                              .add(const SelectImageEvent(
+                                                  ImageSource.gallery));
+                                        },
+                                        child: const Text('Select Image')));
+                              }),
+                    ),
+                  ),
                 ),
                 SizedBox(
                   height: 40,
