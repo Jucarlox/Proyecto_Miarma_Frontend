@@ -1,20 +1,25 @@
-import 'dart:convert';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_miarmapp/bloc/image_pick_bloc/image_pick_bloc_bloc.dart';
-import 'package:flutter_miarmapp/bloc/post_bloc/post_bloc.dart';
-import 'package:flutter_miarmapp/models/PublicPost.dart';
-import 'package:flutter_miarmapp/models/Register.dart';
-import 'package:flutter_miarmapp/repository/post_repository/constants.dart';
-import 'package:flutter_miarmapp/ui/widgets/error_page.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter/cupertino.dart';
-import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_miarmapp/bloc/image_pick_bloc/image_pick_bloc_bloc.dart';
+import 'package:flutter_miarmapp/bloc/register_bloc/register_bloc.dart';
+import 'package:flutter_miarmapp/models/register_dto.dart';
+import 'package:flutter_miarmapp/models/register_response.dart';
+import 'package:flutter_miarmapp/repository/auth_repository/auth_repository.dart';
+import 'package:flutter_miarmapp/repository/auth_repository/auth_repository_impl.dart';
+import 'package:flutter_miarmapp/screens/login_screen.dart';
+
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:date_field/date_field.dart';
+
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -24,400 +29,390 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  GlobalKey<FormState> keyForm = GlobalKey();
-
   String imageSelect = "Imagen no selecionada";
   FilePickerResult? result;
   PlatformFile? file;
   final _imagePicker = ImagePicker();
+  bool isPublic = true;
 
   String date = "";
   DateTime selectedDate = DateTime.now();
-  late Future<RegisterResponse> response;
+
+  late AuthRepository authRepository;
+  final _formKey = GlobalKey<FormState>();
+
+  TextEditingController nick = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController fechaNacimiento = TextEditingController();
+  TextEditingController rol = TextEditingController();
+  TextEditingController password2 = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  late Future<SharedPreferences> _prefs;
+  final String uploadUrl = 'http://10.0.2.2:8080/auth/register';
+  String path = "";
+  bool _passwordVisible = false;
+  bool _password2Visible = false;
 
   @override
   void initState() {
-    response = fetchHourly();
+    authRepository = AuthRepositoryImpl();
+    _prefs = SharedPreferences.getInstance();
+    _passwordVisible = false;
+    _password2Visible = false;
+    // TODO: implement initState
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-              image: AssetImage('assets/images/register.png'),
-              fit: BoxFit.cover),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white,
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) {
+              return ImagePickBlocBloc();
+            },
           ),
-          body: SingleChildScrollView(
-            child: Stack(
-              children: [
-                Container(
-                    padding: EdgeInsets.only(left: 35, top: 30),
-                    child: Form(
-                      child: formUi(),
-                      key: keyForm,
-                    )),
-              ],
-            ),
+          BlocProvider(
+            create: (context) {
+              return RegisterBloc(authRepository);
+            },
           ),
-        ));
-  }
-
-  Future<DateTime?> showDatePicker({
-    required BuildContext context,
-    required DateTime initialDate,
-    required DateTime firstDate,
-    required DateTime lastDate,
-    DateTime? currentDate,
-    DatePickerEntryMode initialEntryMode = DatePickerEntryMode.calendar,
-    SelectableDayPredicate? selectableDayPredicate,
-    String? helpText,
-    String? cancelText,
-    String? confirmText,
-    Locale? locale,
-    bool useRootNavigator = true,
-    RouteSettings? routeSettings,
-    TextDirection? textDirection,
-    TransitionBuilder? builder,
-    DatePickerMode initialDatePickerMode = DatePickerMode.day,
-    String? errorFormatText,
-    String? errorInvalidText,
-    String? fieldHintText,
-    String? fieldLabelText,
-  }) async {
-    Widget dialog = DatePickerDialog(
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      currentDate: currentDate,
-      initialEntryMode: initialEntryMode,
-      selectableDayPredicate: selectableDayPredicate,
-      helpText: helpText,
-      cancelText: cancelText,
-      confirmText: confirmText,
-      initialCalendarMode: initialDatePickerMode,
-      errorFormatText: errorFormatText,
-      errorInvalidText: errorInvalidText,
-      fieldHintText: fieldHintText,
-      fieldLabelText: fieldLabelText,
-    );
-
-    if (textDirection != null) {
-      dialog = Directionality(
-        textDirection: textDirection,
-        child: dialog,
-      );
-    }
-
-    if (locale != null) {
-      dialog = Localizations.override(
-        context: context,
-        locale: locale,
-        child: dialog,
-      );
-    }
-
-    return showDialog<DateTime>(
-      context: context,
-      useRootNavigator: useRootNavigator,
-      routeSettings: routeSettings,
-      builder: (BuildContext context) {
-        return builder == null ? dialog : builder(context, dialog);
-      },
-    );
-  }
-
-  _selectDate(BuildContext context) async {
-    final DateTime? selected = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(1900),
-      lastDate: selectedDate,
-    );
-    if (selected != null && selected != selectedDate)
-      setState(() {
-        selectedDate = selected;
-      });
-  }
-
-  pickFiles(String filetype) async {
-    if (filetype == "Image") {
-      imageSelect = "Imagen Seleccionada";
-      result = await FilePicker.platform.pickFiles(type: FileType.image);
-
-      imageSelect = result!.files.first.name;
-    }
-
-    if (filetype == "Video") {
-      result = await FilePicker.platform.pickFiles(type: FileType.video);
-
-      file = result!.files.first;
-    }
-  }
-
-  Future<RegisterResponse> fetchHourly() async {
-    final response =
-        await http.post(Uri.parse('http://10.0.2.2:auth/register'), body: {});
-    if (response.statusCode == 200) {
-      return RegisterResponse.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to load planets');
-    }
-  }
-
-  Widget formUi() {
-    return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: EdgeInsets.only(left: 35, right: 35),
-            child: Column(
-              children: [
-                TextField(
-                  style: TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
-                        ),
-                      ),
-                      hintText: "Nick",
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                TextField(
-                  style: TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
-                        ),
-                      ),
-                      hintText: "Email",
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                TextField(
-                  style: TextStyle(color: Colors.white),
-                  obscureText: true,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
-                        ),
-                      ),
-                      hintText: "Password",
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                TextField(
-                  style: TextStyle(color: Colors.white),
-                  obscureText: true,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.black,
-                        ),
-                      ),
-                      hintText: "Confirm Password",
-                      hintStyle: TextStyle(color: Colors.white),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                Center(
-                  child: TextField(
-                    style: TextStyle(color: Colors.white),
-                    obscureText: true,
-                    decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(
-                            color: Colors.white,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(
-                            color: Colors.black,
-                          ),
-                        ),
-                        hintText:
-                            "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}",
-                        prefixIcon: IconButton(
-                          onPressed: () {
-                            _selectDate(context);
-                          },
-                          icon: Icon(Icons.calendar_today),
-                        ),
-                        hintStyle: TextStyle(color: Colors.white),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        )),
-                  ),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                TextFormField(
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: imageSelect,
-                    icon: BlocProvider(
-                      create: (context) {
-                        return ImagePickBlocBloc();
-                      },
-                      child:
-                          BlocConsumer<ImagePickBlocBloc, ImagePickBlocState>(
-                              listenWhen: (context, state) {
-                                return state is ImageSelectedSuccessState;
-                              },
-                              listener: (context, state) {},
-                              buildWhen: (context, state) {
-                                return state is ImagePickBlocInitial ||
-                                    state is ImageSelectedSuccessState;
-                              },
-                              builder: (context, state) {
-                                if (state is ImageSelectedSuccessState) {
-                                  print('PATH ${state.pickedFile.path}');
-                                  imageSelect = state.pickedFile.path;
-                                  return Column(children: [
-                                    Image.file(
-                                      File(state.pickedFile.path),
-                                      height: 100,
-                                    ),
-                                    ElevatedButton(
-                                        onPressed: () {
-                                          // TODO el evento que debeis crear en el BLoC para
-                                          // poder subir la imagen que tenemos guardada en
-                                          // state.pickedFile.path
-                                        },
-                                        child: const Text('Upload Image'))
-                                  ]);
-                                }
-                                return Center(
-                                    child: ElevatedButton(
-                                        onPressed: () {
-                                          BlocProvider.of<ImagePickBlocBloc>(
-                                                  context)
-                                              .add(const SelectImageEvent(
-                                                  ImageSource.gallery));
-                                        },
-                                        child: const Text('Select Image')));
-                              }),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 40,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Sign Up',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 27,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Color(0xff4c505b),
-                      child: IconButton(
-                          color: Colors.white,
-                          onPressed: () {
-                            final form = keyForm.currentState?.save();
-
-                            //Navigator.pushNamed(context, '/home');
-                          },
-                          icon: Icon(
-                            Icons.arrow_forward,
-                          )),
-                    )
-                  ],
-                ),
-                SizedBox(
-                  height: 40,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/login');
-                      },
-                      child: Text(
-                        'Sign In',
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.white,
-                            fontSize: 18),
-                      ),
-                      style: ButtonStyle(),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          )
         ],
+        child: _createBody(context),
+      ),
+    );
+  }
+
+  _createBody(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(20),
+            child: BlocConsumer<RegisterBloc, RegisterState>(
+                listenWhen: (context, state) {
+              return state is RegisterSuccessState || state is LoginErrorState;
+            }, listener: (context, state) async {
+              if (state is RegisterSuccessState) {
+                _loginSuccess(context, state.loginResponse);
+              } else if (state is LoginErrorState) {
+                _showSnackbar(context, state.message);
+              }
+            }, buildWhen: (context, state) {
+              return state is RegisterInitial || state is RegisterLoading;
+            }, builder: (ctx, state) {
+              if (state is RegisterInitial) {
+                return _register(ctx);
+              } else if (state is RegisterLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else {
+                return _register(ctx);
+              }
+            })),
+      ),
+    );
+  }
+
+  Future<void> _loginSuccess(
+      BuildContext context, RegisterResponse late) async {
+    _prefs.then((SharedPreferences prefs) {
+      prefs.setString('token', late.email);
+      prefs.setString('id', late.id);
+      prefs.setString('avatar', late.avatar);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    });
+  }
+
+  void _showSnackbar(BuildContext context, String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  _register(BuildContext context) {
+    return SingleChildScrollView(
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24.0, 40.0, 24.0, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Register your account'),
+                ],
+              ),
+              SizedBox(
+                height: 24,
+              ),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                            value: isPublic,
+                            onChanged: (value) {
+                              setState(() {
+                                isPublic = value!;
+                              });
+                            }),
+                        const Text('Hacer perfil privado'),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 24,
+                    ),
+                    Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(14.0),
+                          ),
+                          child: TextFormField(
+                            controller: nick,
+                            decoration: InputDecoration(
+                              hintText: 'Nick',
+                              border: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 18,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(14.0),
+                          ),
+                          child: DateTimeFormField(
+                            initialDate: DateTime(2001, 9, 7),
+                            firstDate: DateTime.utc(1900),
+                            lastDate: DateTime.now(),
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(color: Colors.black45),
+                              errorStyle: TextStyle(color: Colors.redAccent),
+                              border: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              suffixIcon: Icon(Icons.event_note),
+                              labelText: 'Select Birth Day',
+                            ),
+                            mode: DateTimeFieldPickerMode.date,
+                            autovalidateMode: AutovalidateMode.always,
+                            validator: (e) => (e?.day ?? 0) == 1
+                                ? 'Please not the first day'
+                                : null,
+                            onDateSelected: (DateTime value) {
+                              selectedDate = value;
+                              print(value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 24,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(14.0),
+                      ),
+                      child: TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 24,
+                    ),
+                    Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(14.0),
+                          ),
+                          child: TextFormField(
+                            obscureText: !_passwordVisible,
+                            controller: passwordController,
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  // Based on passwordVisible state choose the icon
+                                  _passwordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Theme.of(context).primaryColorDark,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _passwordVisible = !_passwordVisible;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 24,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey,
+                            borderRadius: BorderRadius.circular(14.0),
+                          ),
+                          child: TextFormField(
+                            obscureText: !_password2Visible,
+                            controller: password2,
+                            decoration: InputDecoration(
+                                hintText: 'Confirm Password',
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    // Based on passwordVisible state choose the icon
+                                    _password2Visible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: Theme.of(context).primaryColorDark,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _password2Visible = !_password2Visible;
+                                    });
+                                  },
+                                )),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 18,
+                    ),
+                    BlocConsumer<ImagePickBlocBloc, ImagePickBlocState>(
+                        listenWhen: (context, state) {
+                          return state is ImageSelectedSuccessState;
+                        },
+                        listener: (context, state) {},
+                        buildWhen: (context, state) {
+                          return state is ImagePickBlocInitial ||
+                              state is ImageSelectedSuccessState;
+                        },
+                        builder: (context, state) {
+                          if (state is ImageSelectedSuccessState) {
+                            path = state.pickedFile.path;
+                            print('PATH ${state.pickedFile.path}');
+                            return Column(children: [
+                              Image.file(
+                                File(state.pickedFile.path),
+                                height: 100,
+                              ),
+                            ]);
+                          }
+                          return Center(
+                              child: ElevatedButton(
+                                  onPressed: () {
+                                    BlocProvider.of<ImagePickBlocBloc>(context)
+                                        .add(const SelectImageEvent(
+                                            ImageSource.gallery));
+                                  },
+                                  child: const Text('Seleccionar Imagen')));
+                        })
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 32,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 12,
+                  ),
+                ],
+              ),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      fixedSize: const Size(240, 50), primary: Colors.blue),
+                  onPressed: () async {
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    if (_formKey.currentState!.validate()) {
+                      final loginDto = RegisterDto(
+                          nick: nick.text,
+                          fechaNacimiento:
+                              DateFormat("yyyy-MM-dd").format(selectedDate),
+                          privacity: isPublic,
+                          email: emailController.text,
+                          password2: password2.text,
+                          password: passwordController.text);
+
+                      BlocProvider.of<RegisterBloc>(context)
+                          .add(DoRegisterEvent(loginDto, path));
+                    }
+
+                    prefs.setString('nick', nick.text);
+                    prefs.setString('email', emailController.text);
+                    prefs.setString('fechaNacimiento',
+                        DateFormat("yyyy-MM-dd").format(selectedDate));
+
+                    prefs.setString('password', passwordController.text);
+                    prefs.setString('password2', password2.text);
+
+                    Navigator.pushNamed(context, '/login');
+                  },
+                  child: const Text('Register'),
+                ),
+              ),
+              SizedBox(
+                height: 24,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Already have an account? ",
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/login');
+                    },
+                    child: Text(
+                      'Login',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

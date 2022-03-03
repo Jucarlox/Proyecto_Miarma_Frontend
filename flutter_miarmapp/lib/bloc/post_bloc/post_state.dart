@@ -1,27 +1,47 @@
 part of 'post_bloc.dart';
 
-abstract class PostState extends Equatable {
-  const PostState();
+abstract class BlocPublicacionesState extends Equatable {
+  const BlocPublicacionesState();
 
   @override
   List<Object> get props => [];
 }
 
-class PostInitial extends PostState {}
+class BlocPublicacionesInitial extends BlocPublicacionesState {}
 
-class PostFetched extends PostState {
-  final List<PublicResponse> public;
-  final String type;
+class PublicacionesLoading extends BlocPublicacionesState {}
 
-  const PostFetched(this.public, this.type);
+class PublicacionesSuccessState extends BlocPublicacionesState {
+  final PublicResponse loginResponse;
+
+  const PublicacionesSuccessState(this.loginResponse);
 
   @override
-  List<Object> get props => [public];
+  List<Object> get props => [loginResponse];
 }
 
-class PostFetchError extends PostState {
+class PublicacionErrorState extends BlocPublicacionesState {
   final String message;
-  const PostFetchError(this.message);
+
+  const PublicacionErrorState(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class PublicacionesFetched extends BlocPublicacionesState {
+  final List<PublicResponse> publicaciones;
+  final String type;
+
+  const PublicacionesFetched(this.publicaciones, this.type);
+
+  @override
+  List<Object> get props => [publicaciones];
+}
+
+class PublicacionFetchError extends BlocPublicacionesState {
+  final String message;
+  const PublicacionFetchError(this.message);
 
   @override
   List<Object> get props => [message];
