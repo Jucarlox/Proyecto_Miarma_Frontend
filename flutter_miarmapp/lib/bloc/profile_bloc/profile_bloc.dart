@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter_miarmapp/models/Profile.dart';
 import 'package:flutter_miarmapp/models/PublicPost.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_miarmapp/repository/profile.repository/profile_repository.dart';
 part 'profile_event.dart';

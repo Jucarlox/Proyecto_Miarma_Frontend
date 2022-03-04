@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_miarmapp/models/PublicPost.dart';
 import 'package:flutter_miarmapp/models/post_dto.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,7 +43,7 @@ class PostRepositoryImpl extends PostRepository {
   }
 
   @override
-  Future<PublicResponse> createPublicacion(PostDto dto, String image) async {
+  Future<PublicResponse> createPost(PostDto dto, String image) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     Map<String, String> pepe = {

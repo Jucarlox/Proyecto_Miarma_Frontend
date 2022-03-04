@@ -16,9 +16,9 @@ class FetchPostWithType extends PostEvent {
   List<Object> get props => [type];
 }
 
-class DoPublicacionEvent extends PostEvent {
-  final PostDto registerDto;
+class DoPostEvent extends PostEvent {
+  final PostDto postDto;
   final String imagePath;
 
-  const DoPublicacionEvent(this.registerDto, this.imagePath);
+  const DoPostEvent(this.postDto, this.imagePath);
 }

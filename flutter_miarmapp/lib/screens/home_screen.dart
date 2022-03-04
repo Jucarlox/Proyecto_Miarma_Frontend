@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miarmapp/bloc/post_bloc/post_bloc.dart';
 import 'package:flutter_miarmapp/models/PublicPost.dart';
 import 'package:flutter_miarmapp/repository/post_repository/constants.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository_impl.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository_impl.dart';
 
 import 'package:flutter_miarmapp/ui/widgets/error_page.dart';
 import 'package:flutter_miarmapp/widgets/home_app_bar.dart';
@@ -50,11 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 Widget _createPublics(BuildContext context) {
-  return BlocBuilder<PostBloc, BlocPublicacionesState>(
+  return BlocBuilder<PostBloc, PostState>(
     builder: (context, state) {
-      if (state is BlocPublicacionesInitial) {
+      if (state is PostInitial) {
         return const Center(child: CircularProgressIndicator());
-      } else if (state is PublicacionErrorState) {
+      } else if (state is PostErrorState) {
         return ErrorPage(
           message: state.message,
           retry: () {
@@ -63,10 +63,10 @@ Widget _createPublics(BuildContext context) {
                 .add(FetchPostWithType(Constant.nowPlaying));
           },
         );
-      } else if (state is PublicacionesFetched) {
-        return _createPopularView(context, state.publicaciones);
+      } else if (state is PostFetched) {
+        return _createPopularView(context, state.posts);
       } else {
-        return const Text('Not support');
+        return Center(child: Text("No hay post publicos actualmente"));
       }
     },
   );
@@ -122,6 +122,16 @@ Widget _post(BuildContext context, PublicResponse data) {
           ),
           trailing: const Icon(Icons.more_vert),
         ),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: Text(
+            data.title,
+            style: TextStyle(
+                color: Colors.black.withOpacity(.8),
+                fontWeight: FontWeight.w400,
+                fontSize: 15),
+          ),
+        ),
         InstaLikeButton(
           image: NetworkImage(
               data.fileScale.toString().replaceFirst('localhost', '10.0.2.2')),
@@ -161,6 +171,13 @@ Widget _post(BuildContext context, PublicResponse data) {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           child: Text(
             'liked by you and 299 others',
+            style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(.8)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          child: Text(
+            data.descripcion,
             style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(.8)),
           ),
         )

@@ -11,8 +11,8 @@ import 'package:flutter_miarmapp/models/register_dto.dart';
 import 'package:flutter_miarmapp/models/register_response.dart';
 import 'package:flutter_miarmapp/repository/auth_repository/auth_repository.dart';
 import 'package:flutter_miarmapp/repository/auth_repository/auth_repository_impl.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository.dart';
-import 'package:flutter_miarmapp/repository/post_repository/movie_repository_impl.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository.dart';
+import 'package:flutter_miarmapp/repository/post_repository/post_repository_impl.dart';
 import 'package:flutter_miarmapp/screens/home_screen.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -62,7 +62,7 @@ class _RegisterScreenState extends State<PostScreen> {
     _prefs = SharedPreferences.getInstance();
     _passwordVisible = false;
     _password2Visible = false;
-    // TODO: implement initState
+
     super.initState();
   }
 
@@ -95,23 +95,21 @@ class _RegisterScreenState extends State<PostScreen> {
         child: Container(
             color: Colors.white,
             padding: const EdgeInsets.all(20),
-            child: BlocConsumer<PostBloc, BlocPublicacionesState>(
-                listenWhen: (context, state) {
-              return state is PublicacionesSuccessState ||
-                  state is PublicacionErrorState;
+            child:
+                BlocConsumer<PostBloc, PostState>(listenWhen: (context, state) {
+              return state is PostSuccessState || state is PostErrorState;
             }, listener: (context, state) async {
-              if (state is PublicacionesSuccessState) {
-                _loginSuccess(context, state.loginResponse);
-              } else if (state is PublicacionErrorState) {
+              if (state is PostSuccessState) {
+                _loginSuccess(context, state.postResponse);
+              } else if (state is PostErrorState) {
                 _showSnackbar(context, state.message);
               }
             }, buildWhen: (context, state) {
-              return state is BlocPublicacionesInitial ||
-                  state is PublicacionesLoading;
+              return state is PostInitial || state is PostLoading;
             }, builder: (ctx, state) {
-              if (state is BlocPublicacionesInitial) {
+              if (state is PostInitial) {
                 return _register(ctx);
-              } else if (state is PublicacionesLoading) {
+              } else if (state is PostLoading) {
                 return const Center(child: CircularProgressIndicator());
               } else {
                 return _register(ctx);
@@ -230,6 +228,16 @@ class _RegisterScreenState extends State<PostScreen> {
                                 File(state.pickedFile.path),
                                 height: 100,
                               ),
+                              ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    SharedPreferences prefs =
+                                        await SharedPreferences.getInstance();
+                                    prefs.setString('file', path);
+                                  },
+                                  child: const Text('Cargar Imagen'))
                             ]);
                           }
                           return Center(
@@ -268,7 +276,7 @@ class _RegisterScreenState extends State<PostScreen> {
                           descripcion: texto.text,
                           privacity: isPublic);
                       BlocProvider.of<PostBloc>(context)
-                          .add(DoPublicacionEvent(loginDto, path));
+                          .add(DoPostEvent(loginDto, path));
                     }
                     prefs.setString('title', titulo.text);
                     prefs.setString('descripcion', texto.text);

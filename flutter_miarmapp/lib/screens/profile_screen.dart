@@ -39,32 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return ProfileBloc(userRepository)
           ..add(FetchProfileWithType(Constant.nowPlaying));
       },
-      child: Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            title: const Text(
-              "Luis Miguel López",
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.black),
-            ),
-            actions: const [
-              Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: IconButton(
-                    onPressed: null,
-                    icon: Icon(
-                      Icons.menu,
-                      size: 30,
-                      color: Colors.black,
-                    ),
-                  ))
-            ],
-          ),
-          body: _createPublics(context)),
+      child: Scaffold(body: _createPublics(context)),
     );
   }
 }
@@ -144,7 +119,7 @@ Widget _profile(BuildContext context, VisualizarPerfilResponse user) {
                                                 const FollowPage()));*/
                               },
                               child: Text(
-                                "27",
+                                "0",
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black),
@@ -168,7 +143,7 @@ Widget _profile(BuildContext context, VisualizarPerfilResponse user) {
                                               builder: (context) =>
                                                   const FollowPage()));*/
                                 },
-                                child: Text("832",
+                                child: Text("0",
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black))),

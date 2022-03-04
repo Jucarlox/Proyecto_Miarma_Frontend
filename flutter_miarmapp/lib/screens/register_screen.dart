@@ -332,6 +332,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 File(state.pickedFile.path),
                                 height: 100,
                               ),
+                              ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    SharedPreferences prefs =
+                                        await SharedPreferences.getInstance();
+                                    prefs.setString('file', path);
+                                  },
+                                  child: const Text('Cargar Imagen'))
                             ]);
                           }
                           return Center(
